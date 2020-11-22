@@ -19,7 +19,10 @@ Code edited with VS Code Using
 
 Fork and Clone from the GitHub Repository.  
 
+Run Postgres Server
 `yarn create:migration`
+`yarn dev`
+`yarn watch`
 
 Running the server code requires `nodemon`. If you don't already have `nodemon`, install it globally with `npm install nodemon --global`.
 
