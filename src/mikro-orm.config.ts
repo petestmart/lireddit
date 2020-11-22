@@ -3,6 +3,7 @@ import { Post } from "./entities/Posts";
 import { MikroORM } from "@mikro-orm/core";
 import path from 'path';
 import { User } from "./entities/User";
+import { UserResolver } from "./resolvers/user";
 
 console.log("dirname: ", __dirname); // special variable - absolute path
 export default {
@@ -12,8 +13,8 @@ export default {
   },
   entities: [Post, User],
   dbName: "lireddit",
-  user: '',
-  password: '',
+  user: "",
+  password: "",
   type: "postgresql",
   debug: !__prod__,
 } as Parameters<typeof MikroORM.init>[0];
