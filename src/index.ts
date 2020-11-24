@@ -9,35 +9,63 @@ import {buildSchema} from 'type-graphql';
 import { HelloResolver } from "./resolvers/hello";
 import { PostResolver } from "./resolvers/post";
 import { UserResolver } from "./resolvers/user";
+import redis from "redis";
+import session from "express-session";
+import connectRedis from 'connect-redis';
+import { MyContext } from "./types";
 
 const main = async () => {
-    
-    const orm = await MikroORM.init(microConfig);
-    await orm.getMigrator().up();
+  const orm = await MikroORM.init(microConfig);
+  await orm.getMigrator().up();
 
-    const app = express();
+  const app = express();
 
-    const apolloServer = new ApolloServer({
-      schema: await buildSchema({
-        resolvers: [HelloResolver, PostResolver, UserResolver],
-        validate: false
+  const RedisStore = connectRedis(session);
+  const redisClient = redis.createClient();
+
+  app.use(
+    session({
+      name: 'qid',
+      store: new RedisStore({ 
+        client: redisClient,
+        disableTouch: true
       }),
-      context: () => ({ em: orm.em })
-    });
-
-    apolloServer.applyMiddleware({ app });
-
-    app.get('/', (_ , res) => {
-      res.send("hello");
+      cookie: {
+        maxAge: 1000 * 60 * 60 * 24 * 365 * 10, // 10 Years
+        httpOnly: true,
+        sameSite: 'lax', // csrf
+        secure: __prod__, // cookie only works in https
+      },
+      saveUninitialized: false,
+      secret: "8fhfieksnasdkKJoeeLLOijNnO))KjHgB",
+      resave: false,
     })
-    app.listen(4000, () => {
-      console.log('server started on localhost:4000');
-    })
-    // const post = orm.em.create(Post, {title: 'my first post'});
-    // await orm.em.persistAndFlush(post);
+  );
 
-    // const posts = await orm.em.find(Post, {});
-    // console.log(posts);
+  const apolloServer = new ApolloServer({
+    schema: await buildSchema({
+      resolvers: [HelloResolver, PostResolver, UserResolver],
+      validate: false
+    }),
+    context: ({req, res}): MyContext => ({ 
+      req, 
+      res, 
+      em: orm.em })
+  });
+
+  apolloServer.applyMiddleware({ app });
+
+  app.get('/', (_ , res) => {
+    res.send("hello");
+  })
+  app.listen(4000, () => {
+    console.log('server started on localhost:4000');
+  })
+  // const post = orm.em.create(Post, {title: 'my first post'});
+  // await orm.em.persistAndFlush(post);
+
+  // const posts = await orm.em.find(Post, {});
+  // console.log(posts);
 }
 
 main().catch((err) => {
